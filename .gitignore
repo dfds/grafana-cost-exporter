@@ -1,0 +1,6 @@
+.env
+build
+dump.txt
+data.json
+config.*.json
+export
