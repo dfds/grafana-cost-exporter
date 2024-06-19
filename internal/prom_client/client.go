@@ -21,7 +21,6 @@ func NewClient(endpoint string) *Client {
 }
 
 func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
-	//req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/query_range", c.endpoint), nil)
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/query", c.endpoint), nil)
 	if err != nil {
 		return nil, err
@@ -31,7 +30,6 @@ func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
 	queryValues.Set("query", query)
 	queryValues.Set("time", fmt.Sprintf("%f", time))
 	req.URL.RawQuery = queryValues.Encode()
-	//fmt.Println(req.URL.String())
 
 	resp, err := c.http.Do(req)
 	if err != nil {
@@ -46,6 +44,94 @@ func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
 	}
 
 	var payload *QueryResponse
+
+	err = json.Unmarshal(data, &payload)
+
+	return payload, err
+}
+
+func (c *Client) QueryRange(query string, step string, start int64, end int64) (*QueryResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/query_range", c.endpoint), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := req.URL.Query()
+	queryValues.Set("query", query)
+	queryValues.Set("start", fmt.Sprintf("%d", start))
+	queryValues.Set("end", fmt.Sprintf("%d", end))
+	queryValues.Set("step", step)
+	req.URL.RawQuery = queryValues.Encode()
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload *QueryResponse
+
+	err = json.Unmarshal(data, &payload)
+
+	return payload, err
+}
+
+func (c *Client) ListSeries() (*ListSeriesResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/label/__name__/values", c.endpoint), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := req.URL.Query()
+	req.URL.RawQuery = queryValues.Encode()
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload *ListSeriesResponse
+
+	err = json.Unmarshal(data, &payload)
+
+	return payload, err
+}
+
+func (c *Client) ListLabels() (*ListLabelsResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/labels", c.endpoint), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	queryValues := req.URL.Query()
+	req.URL.RawQuery = queryValues.Encode()
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload *ListLabelsResponse
 
 	err = json.Unmarshal(data, &payload)
 
@@ -85,39 +171,4 @@ func ResultToVector(data []interface{}) ([]Vector, error) {
 	}
 
 	return payload, nil
-}
-
-type Vector struct {
-	Metric VectorMetricLabel `json:"metric"`
-	Value  VectorValue       `json:"value"`
-}
-
-type VectorMetricLabel struct {
-	Instance string `json:"instance"`
-	Job      string `json:"job"`
-	KafkaID  string `json:"kafka_id"`
-	Topic    string `json:"topic"`
-}
-
-type VectorValue struct {
-	Time  float64
-	Value string
-}
-
-type vectorMidParse struct {
-	Metric struct {
-		Instance string `json:"instance"`
-		Job      string `json:"job"`
-		KafkaID  string `json:"kafka_id"`
-		Topic    string `json:"topic"`
-	} `json:"metric"`
-	Value []interface{} `json:"value"`
-}
-
-type QueryResponse struct {
-	Status string `json:"status"`
-	Data   struct {
-		ResultType string        `json:"resultType"`
-		Result     []interface{} `json:"result"`
-	} `json:"data"`
 }
