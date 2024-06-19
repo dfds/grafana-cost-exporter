@@ -6,14 +6,11 @@ type Vector struct {
 }
 
 type VectorMetricLabel struct {
-	Instance string `json:"instance"`
-	Job      string `json:"job"`
-	KafkaID  string `json:"kafka_id"`
-	Topic    string `json:"topic"`
+	Namespace string `json:"namespace"`
 }
 
 type VectorValue struct {
-	Time  float64
+	Time  int64
 	Value string
 }
 
@@ -32,6 +29,19 @@ type QueryResponse struct {
 	Data   struct {
 		ResultType string        `json:"resultType"`
 		Result     []interface{} `json:"result"`
+	} `json:"data"`
+}
+
+type QueryRangeResponse struct {
+	Status string `json:"status"`
+	Data   struct {
+		ResultType string `json:"resultType"`
+		Result     []struct {
+			Metric struct {
+				Namespace string `json:"namespace,omitempty"`
+			} `json:"metric"`
+			Values [][]interface{} `json:"values"`
+		} `json:"result"`
 	} `json:"data"`
 }
 

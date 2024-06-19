@@ -46,7 +46,10 @@ func worker() {
 			Username: config.Loki.Auth.Username,
 			Token:    config.Loki.Auth.Token,
 		})
-		promClient := prom_client.NewClient(config.Prometheus.Endpoint)
+		promClient := prom_client.NewClient(config.Prometheus.Endpoint, &prom_client.Auth{
+			Username: config.Prometheus.Auth.Username,
+			Token:    config.Prometheus.Auth.Token,
+		})
 		gatherer := metrics.NewGatherer(lokiClient, promClient)
 		//data := gatherer.GetAllMetrics()
 		gatherer.GetAllMetrics()

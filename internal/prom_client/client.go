@@ -1,23 +1,34 @@
 package prom_client
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 )
 
 type Client struct {
 	endpoint string
+	auth     *Auth
 	http     *http.Client
 }
 
-func NewClient(endpoint string) *Client {
+type Auth struct {
+	Username string `json:"username"`
+	Token    string `json:"token"`
+}
+
+func NewClient(endpoint string, auth *Auth) *Client {
 	return &Client{
 		endpoint: endpoint,
 		http:     http.DefaultClient,
+		auth:     auth,
 	}
+}
+
+func (c *Client) PrepareHttpRequest(req *http.Request) {
+	req.Header.Set("Authorization", fmt.Sprintf("Basic %s", base64.URLEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", c.auth.Username, c.auth.Token)))))
 }
 
 func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
@@ -25,6 +36,8 @@ func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.PrepareHttpRequest(req)
 
 	queryValues := req.URL.Query()
 	queryValues.Set("query", query)
@@ -50,11 +63,13 @@ func (c *Client) Query(query string, time float64) (*QueryResponse, error) {
 	return payload, err
 }
 
-func (c *Client) QueryRange(query string, step string, start int64, end int64) (*QueryResponse, error) {
+func (c *Client) QueryRange(query string, step string, start int64, end int64) (*QueryRangeResponse, error) {
 	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/query_range", c.endpoint), nil)
 	if err != nil {
 		return nil, err
 	}
+
+	c.PrepareHttpRequest(req)
 
 	queryValues := req.URL.Query()
 	queryValues.Set("query", query)
@@ -75,7 +90,7 @@ func (c *Client) QueryRange(query string, step string, start int64, end int64) (
 		return nil, err
 	}
 
-	var payload *QueryResponse
+	var payload *QueryRangeResponse
 
 	err = json.Unmarshal(data, &payload)
 
@@ -87,6 +102,8 @@ func (c *Client) ListSeries() (*ListSeriesResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	c.PrepareHttpRequest(req)
 
 	queryValues := req.URL.Query()
 	req.URL.RawQuery = queryValues.Encode()
@@ -116,6 +133,8 @@ func (c *Client) ListLabels() (*ListLabelsResponse, error) {
 		return nil, err
 	}
 
+	c.PrepareHttpRequest(req)
+
 	queryValues := req.URL.Query()
 	req.URL.RawQuery = queryValues.Encode()
 
@@ -138,35 +157,16 @@ func (c *Client) ListLabels() (*ListLabelsResponse, error) {
 	return payload, err
 }
 
-func ResultToVector(data []interface{}) ([]Vector, error) {
-	var casted []vectorMidParse
-	for _, d := range data {
-		var deserialised vectorMidParse
-		serialised, err := json.Marshal(d)
-		if err != nil {
-			log.Fatal(err)
-		}
-		err = json.Unmarshal(serialised, &deserialised)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		casted = append(casted, deserialised)
-	}
+func ResultToVector(data [][]interface{}) ([]Vector, error) {
 	var payload []Vector
 
-	for _, vec := range casted {
-		newVec := Vector{
-			Metric: VectorMetricLabel{
-				Instance: vec.Metric.Instance,
-				Job:      vec.Metric.Job,
-				KafkaID:  vec.Metric.KafkaID,
-				Topic:    vec.Metric.Topic,
-			},
-			Value: VectorValue{},
-		}
-		newVec.Value.Time = vec.Value[0].(float64)
-		newVec.Value.Value = vec.Value[1].(string)
+	for _, x := range data {
+		timestamp := x[0].(float64)
+		value := x[1].(string)
+
+		newVec := Vector{Value: VectorValue{}}
+		newVec.Value.Value = value
+		newVec.Value.Time = int64(timestamp)
 		payload = append(payload, newVec)
 	}
 

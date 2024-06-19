@@ -11,6 +11,10 @@ type Config struct {
 	WorkerInterval int `json:"workerInterval"`
 	Prometheus     struct {
 		Endpoint string `json:"endpoint"`
+		Auth     struct {
+			Username string `json:"username"`
+			Token    string `json:"token"`
+		}
 	}
 	Loki struct {
 		Endpoint string `json:"endpoint"`

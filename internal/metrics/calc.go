@@ -1,17 +1,24 @@
 package metrics
 
-//import (
-//	"fmt"
-//	"log"
-//	"regexp"
-//	"strconv"
-//)
-//
+import "regexp"
+
 //type ByCapabilityResponse struct {
 //	DaysTotal      map[CapabilityId]map[ClusterId]map[MetricKey]float64
 //	DaysTopicTotal map[CapabilityId]map[ClusterId]map[TopicName]map[MetricKey]float64
 //}
 //
+
+func ByCapability() error {
+	pattern, err := regexp.Compile("(.*-.{5})")
+	if err != nil {
+		return err
+	}
+
+	pattern.String() // placeholder
+
+	return nil
+}
+
 //func ByCapability(allMetrics *AllMetricsResponse) ByCapabilityResponse {
 //	pattern, err := regexp.Compile("(pub.)?(.*-.{5})\\.")
 //	if err != nil {
@@ -23,7 +30,7 @@ package metrics
 //	daysTotal := make(map[CapabilityId]map[ClusterId]map[MetricKey]float64)
 //	daysTopicTotal := make(map[CapabilityId]map[ClusterId]map[TopicName]map[MetricKey]float64)
 //
-//	for metricKey, v := range allMetrics.Days30 {
+//	for metricKey, v := range allMetrics.Days30Loki {
 //		for clusterId, vv := range v {
 //			for topic, value := range vv {
 //				capabilityRootId := pattern.FindStringSubmatch(topic)
