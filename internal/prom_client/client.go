@@ -3,6 +3,7 @@ package prom_client
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,6 +92,44 @@ func (c *Client) QueryRange(query string, step string, start int64, end int64) (
 	}
 
 	var payload *QueryRangeResponse
+
+	err = json.Unmarshal(data, &payload)
+
+	return payload, err
+}
+
+func (c *Client) Series(match string, start int64, end int64) (*SeriesResponse, error) {
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/series", c.endpoint), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	c.PrepareHttpRequest(req)
+
+	queryValues := req.URL.Query()
+	queryValues.Set("match[]", match)
+	queryValues.Set("start", fmt.Sprintf("%d", start))
+	queryValues.Set("end", fmt.Sprintf("%d", end))
+	req.URL.RawQuery = queryValues.Encode()
+
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		fmt.Println(resp.Header)
+		return nil, errors.New(resp.Status)
+	}
+
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var payload *SeriesResponse
 
 	err = json.Unmarshal(data, &payload)
 

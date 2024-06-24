@@ -45,6 +45,21 @@ type QueryRangeResponse struct {
 	} `json:"data"`
 }
 
+type SeriesResponse struct {
+	Status string `json:"status"`
+	Data   []struct {
+		Name      string `json:"__name__"`
+		Cluster   string `json:"cluster"`
+		Endpoint  string `json:"endpoint"`
+		Instance  string `json:"instance"`
+		Job       string `json:"job"`
+		Name1     string `json:"name"`
+		Namespace string `json:"namespace"`
+		Pod       string `json:"pod"`
+		Service   string `json:"service"`
+	} `json:"data"`
+}
+
 type ListSeriesResponse struct {
 	Status string   `json:"status"`
 	Data   []string `json:"data"`
